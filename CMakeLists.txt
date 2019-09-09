@@ -1,16 +1,10 @@
 cmake_minimum_required(VERSION 3.8)
 set(PLATFORM_VERSION 1.000)
 
-add_definitions(-DBOOST_NO_CXX11_SCOPED_ENUMS)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 project(Platform VERSION ${PLATFORM_VERSION} LANGUAGES CXX)
 message("Start building platform library version ${PLATFORM_VERSION}")
-
-set(BOOST_ROOT /home/vladankor/Documents/Development/boost)
-set(BOOST_INCLUDEDIR /home/vladankor/Documents/Development/boost/include)
-set(BOOST_LIBRARYDIR /home/vladankor/Documents/Development/boost/lib)
-set(Boost_NO_SYSTEM_PATHS ON)
 
 set(SRC_FILES
   "source/scope.cpp"
