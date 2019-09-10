@@ -9,11 +9,11 @@ namespace platform {
 
 class Scope {
  public:
-    explicit Scope(std::function<void()>&& on_destruct);
-    ~Scope();
+  explicit Scope(std::function<void()>&& on_destruct);
+  ~Scope();
 
  private:
-    std::function<void()> m_onDestruct;
+  std::function<void()> m_onDestruct;
 };  // class Scope
 
 }  // namespace platform

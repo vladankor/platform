@@ -9,12 +9,12 @@ namespace platform {
 
 class SpinLock {
  public:
-    void lock();
-    bool try_lock();
-    void unlock();
+  void lock();
+  bool try_lock();
+  void unlock();
 
  private:
-    std::atomic_bool m_lock = false;
+  std::atomic_bool m_lock = false;
 };  // class SpinLock
 
 }  // namespace platform

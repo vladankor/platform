@@ -9,8 +9,8 @@ message("Start building platform library version ${PLATFORM_VERSION}")
 set(SRC_FILES
   "source/scope.cpp"
   "source/spin_lock.cpp"
-  "source/utilities/configuration/storage.cpp"
-  "source/utilities/configuration/single_storage.cpp"
+  "source/utilities/configuration/configuration.cpp"
+  "source/utilities/configuration/single_configuration.cpp"
   "source/utilities/log/log.cpp"
   "source/utilities/log/single_log.cpp")
 
@@ -22,9 +22,9 @@ set(INCLUDE_FILES
   "include/platform/type_traits.hpp"
   "include.platform/utilities.hpp"
   "include/platform/utilities/configuration/reader.hpp"
-  "include/platform/utilities/configuration/storage.hpp"
+  "include/platform/utilities/configuration/configuration.hpp"
   "include/platform/utilities/configuration/exception.hpp"
-  "include/platform/utilities/configuration/single_storage.hpp"
+  "include/platform/utilities/configuration/single_configuration.hpp"
   "include/platform/log/exception.hpp"
   "include/platform/log/log.hpp"
   "include/platform/log/single_log.hpp")

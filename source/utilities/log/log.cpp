@@ -18,14 +18,14 @@
 namespace platform {
 namespace log {
 
-const boost::string_view Log::LOG_FOLDER = "/log";
-const boost::string_view Log::LOG_EXT = ".log";
-
 constexpr int LEVEL_IO_WIDTH = 13;
 
 //
 // Log
 //
+
+const std::string_view Log::LOG_FOLDER = "log";
+const std::string_view Log::LOG_EXT = ".log";
 
 // public:
 
@@ -50,9 +50,16 @@ std::string Log::generateLogMessage(const std::string& message, const level log_
                     << std::setfill('0') << std::setw(2) << current_time.time_of_day().minutes() << ':'
                     << std::setfill('0') << std::setw(2) << current_time.time_of_day().seconds() << '.'
                     << std::setfill('0') << std::setw(3) << current_time.time_of_day().total_milliseconds() << "] "
-                    << message
-                    << std::endl;
+                    << message;
   return formatted_message.str();
+}
+
+void Log::checkOrCreateLogFolder() {
+  if (!boost::filesystem::exists(m_logFolderPath))
+    boost::filesystem::create_directory(m_logFolderPath);
+  if (!boost::filesystem::is_directory(m_logFolderPath))
+    throw LogFolderIsNotDirectoryError{std::string{m_logFolderPath.string()}
+                                       .append(" isn't a directory!")};
 }
 
 }  // namespace log

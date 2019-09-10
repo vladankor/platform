@@ -12,37 +12,37 @@ namespace platform {
 template<class Object>
 class PSingleton {
  public:
-    ~PSingleton() {
-    }
+  ~PSingleton() {
+  }
 
-    static std::shared_ptr<Object>& instance() {
-      static std::shared_ptr<Object> m_object = nullptr;
-      if (!m_object) {
-        static platform::SpinLock m_lock;
-        if (std::lock_guard<platform::SpinLock> lg_(m_lock); !m_object)
-          m_object = Object::create();
-      }
-      return m_object;
+  static std::shared_ptr<Object>& instance() {
+    static std::shared_ptr<Object> m_object{nullptr};
+    if (!m_object) {
+      static platform::SpinLock m_lock;
+      if (std::lock_guard<decltype(m_lock)> lg_(m_lock); !m_object)
+        m_object = Object::create();
     }
+    return m_object;
+  }
  protected:
-    struct EMPTY_TAG {};
+  struct EMPTY_TAG {};
 
-    PSingleton() = default;
-    PSingleton(const PSingleton<Object>& other) = delete;
-    PSingleton(PSingleton<Object>&& other) = delete;
+  PSingleton() = default;
+  PSingleton(const PSingleton<Object>& other) = delete;
+  PSingleton(PSingleton<Object>&& other) = delete;
 
-    PSingleton<Object>& operator=(const PSingleton<Object>& rhs) = delete;
-    PSingleton<Object>& operator=(PSingleton<Object>&& rhs) = delete;
+  PSingleton<Object>& operator=(const PSingleton<Object>& rhs) = delete;
+  PSingleton<Object>& operator=(PSingleton<Object>&& rhs) = delete;
 };  // class PSingleton
 
 }  // namespace platform
 
-#ifdef P_PSINGLETON_B
-  static_assert(false, "P_PSINGLETON_B already defined!");
-#elif defined P_PSINGLETON_E
-  static_assert(false, "P_PSINGLETON_E already defined!");
+#ifdef PLATFORM_PSINGLETON_B
+  static_assert(false, "PLATFORM_PSINGLETON_B already defined!");
+#elif defined PLATFORM_PSINGLETON_E
+  static_assert(false, "PLATFORM_PSINGLETON_E already defined!");
 #else
-  #define P_PSINGLETON_B(CLASS_NAME) \
+  #define PLATFORM_PSINGLETON_B(CLASS_NAME) \
     class CLASS_NAME : public platform::PSingleton<CLASS_NAME> { \
       friend class platform::PSingleton<CLASS_NAME>; \
      private: \
@@ -56,5 +56,5 @@ class PSingleton {
           return std::make_shared<CLASS_NAME>(platform::PSingleton<CLASS_NAME>::EMPTY_TAG{}); \
         } \
      private:
-  #define P_PSINGLETON_E(CLASS_NAME) };
-#endif  // P_PSINGLETON_B, P_PSINGLETON_E
+  #define PLATFORM_PSINGLETON_E(CLASS_NAME) };
+#endif  // PLATFORM_PSINGLETON_B, PLATFORM_PSINGLETON_E

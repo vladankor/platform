@@ -6,37 +6,47 @@
 // std
 #include <string>
 #include <utility>
-// boost
-#include <boost/utility/string_view.hpp>
+#include <string_view>
+#include <memory>
+#include <functional>
+#include <iostream>
 // platform
 #include <platform/singleton.hpp>
 #include <platform/utilities/log/single_log.hpp>
-#include <platform/container/type_map.hpp>
+#include <platform/containers/type_map.hpp>
 #include <platform/type_traits.hpp>
 
-#ifdef P_REGISTER_LOG
-  static_assert(false, "P_REGISTER_LOG already defined!");
+#ifdef PLATFORM_REGISTER_LOG
+  static_assert(false, "PLATFORM_REGISTER_LOG already defined!");
+#elif defined PLATFORM_TURN_ON_LOG
+  static_assert(false, "PLATFORM_TURN_ON_LOG already defined!");
 #else
-  #define P_REGISTER_LOG(LOG_TAG) \
+  #define PLATFORM_REGISTER_LOG(LOG_TAG) \
     struct LOG_TAG {}; \
     namespace platform { \
       template<> \
       struct TypeName<LOG_TAG> { \
-        static boost::string_view get() { \
+        static std::string_view get() { \
           return #LOG_TAG; \
         } \
       }; \
     }
-  #define P_TURN_ON_LOG(LOG_TAG) \
+  #define PLATFORM_TURN_ON_LOG(LOG_TAG) \
     platform::log::Log::instance()->addLog<LOG_TAG>();
-#endif  // P_REGISTER_LOG
+#endif  // PLATFORM_REGISTER_LOG, PLATFORM_TURN_ON_LOG
 
-P_REGISTER_LOG(PlatformLog)
+PLATFORM_REGISTER_LOG(PlatformLog)
 
 namespace platform {
 namespace log {
 
-P_PSINGLETON_B(Log)
+/**
+ * \brief Глобальное хранилище для доступа к системе логирования
+ * 
+ * Предоставялет доступ к пользовательским логам, а также к библиотечному
+ * логу PlatformLog.
+ */
+PLATFORM_PSINGLETON_B(Log)
   enum class level {
     fatal,
     error,
@@ -45,7 +55,7 @@ P_PSINGLETON_B(Log)
     debug
   };  // enum class level
 
-  boost::string_view toStringView(const level log_level) {
+  std::string_view toStringView(const level log_level) {
     switch (log_level) {
       case level::fatal: return "[FATAL]";
       case level::error: return "[ERROR]";
@@ -56,66 +66,138 @@ P_PSINGLETON_B(Log)
     }
   }
 
-  static const boost::string_view LOG_FOLDER;
-  static const boost::string_view LOG_EXT;
+  static const std::string_view LOG_FOLDER;
+  static const std::string_view LOG_EXT;
 
  public:
-    ~Log();
+  ~Log();
 
-    template<class TLogTag>
-    void addLog() {
+  /**
+   * \brief Добавить лог с меткой TLogTag
+   * \param TLogTag - метка, определяющая тип лога, с которым необходимо работать
+   * \details Для использования необходимо наличие специализации шаблона platform::TypeName
+   * для типа TLogTag. Для удобства можно использовать макрос PLATFORM_REGISTER_LOG,
+   * определяющий простую метку и реализацю шаблона (использовать в глобальной области),
+   * совместно с макросом PLATFORM_TURN_ON_LOG, который следует применить в начале программы
+   */
+  template<class TLogTag>
+  void addLog() {
+    callAndHandleErrorsVoid<std::function<void()>>([this]() {
+      checkOrCreateLogFolder();
+      std::lock_guard<decltype(m_logsLock)> lg_(m_logsLock);
       if (auto log_it = m_logs.find<TLogTag>(); log_it != m_logs.end()) {
         return;
       } else {
-        auto log_file_path = boost::filesystem::path{m_logFolderPath}
-                             .append(std::string{TypeName<TLogTag>::get()}
-                                     .append(LOG_EXT.data()));
-        auto new_log = SingleLog{log_file_path};
-        m_logs.insert<TLogTag>(std::move(new_log));
+        auto log_file_name = std::string{TypeName<TLogTag>::get()}.append(LOG_EXT.data());
+        auto log_file_path = boost::filesystem::path{m_logFolderPath}.append(log_file_name);
+        m_logs.insert<TLogTag>(std::make_shared<SingleLog>(std::move(log_file_path)));
       }
-    }
+    });
+  }
 
-    template<class TLogTag>
-    inline bool addFatal(const std::string& message) noexcept {
-      return add<TLogTag>(message, level::fatal);
-    }
-    template<class TLogTag>
-    inline bool addError(const std::string& message) noexcept {
-      return add<TLogTag>(message, level::error);
-    }
-    template<class TLogTag>
-    inline bool addWarning(const std::string& message) noexcept {
-      return add<TLogTag>(message, level::warning);
-    }
-    template<class TLogTag>
-    inline bool addInformation(const std::string& message) noexcept {
-      return add<TLogTag>(message, level::information);
-    }
-    template<class TLogTag>
-    inline bool addDebug(const std::string& message) noexcept {
+  /**
+   * \brief Извлечь лог с меткой TLogTag
+   */
+  template<class TLogTag>
+  void eraseLog() {
+    callAndHandleErrorsVoid<std::function<void()>>([this]() {
+      std::lock_guard<decltype(m_logsLock)> lg_(m_logsLock);
+      m_logs.erase<TLogTag>();
+    });
+  }
+
+  /**
+   * \brief Добавить сообщение в лог с меткой FATAL
+   */
+  template<class TLogTag>
+  inline bool addFatal(const std::string& message) noexcept {
+    return add<TLogTag>(message, level::fatal);
+  }
+  /**
+   * \brief Добавить сообщение в лог с меткой ERROR
+   */
+  template<class TLogTag>
+  inline bool addError(const std::string& message) noexcept {
+    return add<TLogTag>(message, level::error);
+  }
+  /**
+   * \brief Добавить сообщение в лог с меткой WARNING
+   */
+  template<class TLogTag>
+  inline bool addWarning(const std::string& message) noexcept {
+    return add<TLogTag>(message, level::warning);
+  }
+  /**
+   * \brief Добавить сообщение в лог с меткой INFORMATION
+   */
+  template<class TLogTag>
+  inline bool addInformation(const std::string& message) noexcept {
+    return add<TLogTag>(message, level::information);
+  }
+  /**
+   * \brief Добавить сообщение в лог с меткой DEBUG, если существует определение
+   * PLATFORM_DEBUG_LOG
+   */
+  template<class TLogTag>
+  inline bool addDebug(const std::string& message) noexcept {
+    #ifdef PLATFORM_DEBUG_LOG
       return add<TLogTag>(message, level::debug);
-    }
+    #endif  // PLATFORM_DEBUG_LOG
+  }
 
  private:
-       container::TypeMap<SingleLog> m_logs;
-             boost::filesystem::path m_logFolderPath;
+  containers::TypeMap<std::shared_ptr<SingleLog>> m_logs; /**< Хранилище логов */
+                          boost::filesystem::path m_logFolderPath; /**< Путь к папке с логами */
+                               mutable std::mutex m_logsLock; /**< Обеспечение безопасности хранилища */
 
-    Log();
+  Log();
 
-    template<class TLogTag>
-    bool add(const std::string& message, const level log_level) noexcept {
-      if (auto log_it = m_logs.find<TLogTag>(); log_it == m_logs.end()) {
-        // if the log isn't found, add message to platform log
+  template<class TLogTag>
+  bool add(const std::string& message, const level log_level) noexcept {
+    return callAndHandleErrors<bool, std::function<bool()>>([this, &message, log_level]() -> bool {
+      checkOrCreateLogFolder();
+      std::shared_ptr<SingleLog> current_log{nullptr};
+      {
+        std::lock_guard<decltype(m_logsLock)> lc_(m_logsLock);
+        if (auto log_it = m_logs.find<TLogTag>(); log_it != m_logs.end()) {
+          current_log = log_it->second;
+        }
+      }
+
+      if (!current_log) {
         add<PlatformLog>(message, log_level);
         return false;
       } else {
-        log_it->second.add(generateLogMessage(message, log_level));
+        current_log->add(generateLogMessage(message, log_level));
         return true;
       }
-    }
+    });
+  }
 
-    std::string generateLogMessage(const std::string& message, const level log_level);
-P_PSINGLETON_E(Log)  // class Log
+  std::string generateLogMessage(const std::string& message, const level log_level);
+  void checkOrCreateLogFolder();
+  template<class TResult, class TFunction>
+  TResult callAndHandleErrors(const TFunction& function) const {
+    try {
+      return function();
+    } catch (const std::exception& ex) {
+      std::cout << ex.what() << std::endl;
+    } catch (...) {
+      std::cout << "Unknown error in log system!" << std::endl;
+    }
+    return TResult{};
+  }
+  template<class TFunction>
+  void callAndHandleErrorsVoid(const TFunction& function) const {
+    try {
+      function();
+    } catch (const std::exception& ex) {
+      std::cout << ex.what() << std::endl;
+    } catch (...) {
+      std::cout << "Unknown error in log system!" << std::endl;
+    }
+  }
+PLATFORM_PSINGLETON_E(Log)  // class Log
 
 }  // namespace log
 }  // namespace platform

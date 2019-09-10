@@ -3,20 +3,22 @@
 // ----------------------------------------------------------------------------
 
 // platform
-#include <platform/utilities/configuration/single_storage.hpp>
+#include <platform/utilities/configuration/single_configuration.hpp>
 #include <platform/utilities/configuration/exception.hpp>
 #include <platform/utilities/configuration/reader.hpp>
 
 namespace platform {
 namespace configuration {
 
+namespace b_fs = ::boost::filesystem;
+
 //
-// SingleStorage
+// SingleConfiguration
 //
 
 // public:
 
-SingleStorage::SingleStorage(boost::filesystem::path&& configuration_file_path)
+SingleConfiguration::SingleConfiguration(b_fs::path&& configuration_file_path)
   : m_configurationFilePath{std::move(configuration_file_path)} {
   readConfiguration();
   if (!checkInternalState())
@@ -25,12 +27,12 @@ SingleStorage::SingleStorage(boost::filesystem::path&& configuration_file_path)
 
 // private:
 
-bool SingleStorage::checkInternalState() const noexcept {
+bool SingleConfiguration::checkInternalState() const noexcept {
   return true;
 }
 
-void SingleStorage::readConfiguration() {
-  m_internalStorage = Reader<SingleStorage>::readConfiguration(m_configurationFilePath);
+void SingleConfiguration::readConfiguration() {
+  m_internalStorage = Reader<SingleConfiguration>::readConfiguration(m_configurationFilePath);
 }
 
 }  // namespace configuration

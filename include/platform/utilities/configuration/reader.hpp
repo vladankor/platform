@@ -18,18 +18,18 @@
 namespace platform {
 namespace configuration {
 
-template<class TAG_NAME>
+template<class TTagName>
 class Reader {
  public:
-    static boost::property_tree::ptree readConfiguration(const boost::filesystem::path& config_path) {
-      if (!boost::filesystem::exists(config_path))
-        throw ConfigReadError{};
-      boost::property_tree::ptree configuration;
-      boost::property_tree::read_json(config_path.string(), configuration);
+  static boost::property_tree::ptree readConfiguration(const boost::filesystem::path& config_path) {
+    if (!boost::filesystem::exists(config_path))
+      throw ConfigReadError{};
+    boost::property_tree::ptree configuration;
+    boost::property_tree::read_json(config_path.string(), configuration);
 
-      return std::move(configuration);
-    }
-};
+    return std::move(configuration);
+  }
+};  // class Reader
 
 }  // namespace configuration
 }  // namespace platform

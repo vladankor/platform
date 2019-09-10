@@ -12,10 +12,12 @@ namespace log {
 struct LOG_WRITE_ERROR_TAG {};
 struct LOG_NOT_FOUND_ERROR_TAG {};
 struct LOG_READ_ERROR_TAG {};
+struct LOG_FOLDER_IS_NOT_DIRECTPORY_ERROR{};
 
 using LogWriteError = Exception<LOG_WRITE_ERROR_TAG>;
 using LogNotFoundError = Exception<LOG_NOT_FOUND_ERROR_TAG>;
 using LogReadError = Exception<LOG_READ_ERROR_TAG>;
+using LogFolderIsNotDirectoryError = Exception<LOG_FOLDER_IS_NOT_DIRECTPORY_ERROR>;
 
 }  // namespace log
 }  // namespace platform

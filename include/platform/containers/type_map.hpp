@@ -9,7 +9,7 @@
 #include <utility>
 
 namespace platform {
-namespace container {
+namespace containers {
 
 template<class TValue>
 class TypeMap {
@@ -59,5 +59,5 @@ class TypeMap {
   Storage m_storage;
 };  // class TypeMap
 
-}  // namespace container
+}  // namespace containers
 }  // namespace platform
