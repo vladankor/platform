@@ -55,6 +55,10 @@ class TypeMap {
     return m_storage.erase(std::type_index{typeid(TKey)});
   }
 
+  void clear() {
+    m_storage.clear();
+  }
+
  private:
   Storage m_storage;
 };  // class TypeMap

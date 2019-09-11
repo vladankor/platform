@@ -53,7 +53,9 @@ void SingleLog::add(const std::string& message) {
   m_logFile.open(m_logFilePath.c_str(), std::ios::out|std::ios::app);
   Scope sc_([this](){ this->m_logFile.close(); });
   if (!m_logFile.good())
-    throw LogWriteError{std::string("Unable write data to log file ").append(m_logFilePath.string())};
+    throw LogWriteError{std::string{__FUNCTION__}
+                        .append(": unable write data to log file ")
+                        .append(m_logFilePath.string())};
   m_logFile << message << std::endl;
 }
 

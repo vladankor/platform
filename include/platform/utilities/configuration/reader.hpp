@@ -23,7 +23,7 @@ class Reader {
  public:
   static boost::property_tree::ptree readConfiguration(const boost::filesystem::path& config_path) {
     if (!boost::filesystem::exists(config_path))
-      throw ConfigReadError{};
+      throw ConfigReadError{std::string{"Configuration "}.append(config_path.string()).append(" doesn't exists!")};
     boost::property_tree::ptree configuration;
     boost::property_tree::read_json(config_path.string(), configuration);
 

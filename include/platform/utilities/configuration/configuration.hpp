@@ -17,6 +17,7 @@
 #include <platform/type_traits.hpp>
 #include <platform/containers/type_map.hpp>
 #include <platform/utilities/configuration/single_configuration.hpp>
+#include <platform/utilities/log/log.hpp>
 
 #ifdef PLATFORM_REGISTER_CONFIGURATION
   static_assert(false, "PLATFORM_REGISTER_CONFIGURATION already defined!");
@@ -92,24 +93,24 @@ PLATFORM_PSINGLETON_B(Configuration)
 
   void checkOrCreateConfigurationFolder() const;
   template<class TResult, class TFunction>
-  TResult callAndHandleErrors(const TFunction& function) const {
+  TResult callAndHandleErrors(const TFunction& function) const noexcept {
     try {
       return function();
     } catch (const std::exception& ex) {
-      std::cout << ex.what() << std::endl;
+      log::Log::instance()->addError<PlatformLog>(ex.what());
     } catch (...) {
-      std::cout << "Unknown error in configuration system!" << std::endl;
+      log::Log::instance()->addError<PlatformLog>("Unknown error in configuration system!");
     }
     return TResult{};
   }
   template<class TFunction>
-  void callAndHandleErrorsVoid(const TFunction& function) const {
+  void callAndHandleErrorsVoid(const TFunction& function) const noexcept {
     try {
       function();
     } catch (const std::exception& ex) {
-      std::cout << ex.what() << std::endl;
+      log::Log::instance()->addError<PlatformLog>(ex.what());
     } catch (...) {
-      std::cout << "Unknown error in configuration system!" << std::endl;
+      log::Log::instance()->addError<PlatformLog>("Unknown error in configuration system!");
     }
   }
 

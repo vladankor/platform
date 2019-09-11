@@ -30,6 +30,10 @@ const std::string_view Log::LOG_EXT = ".log";
 // public:
 
 Log::~Log() {
+  // Данное действие обеспечит безопасное уничтожение лога, даже если в данный
+  // кто-то производит запись в лог
+  std::lock_guard<decltype(m_logsLock)> lc_(m_logsLock);
+  m_logs.clear();
 }
 
 // private:
@@ -58,7 +62,9 @@ void Log::checkOrCreateLogFolder() {
   if (!boost::filesystem::exists(m_logFolderPath))
     boost::filesystem::create_directory(m_logFolderPath);
   if (!boost::filesystem::is_directory(m_logFolderPath))
-    throw LogFolderIsNotDirectoryError{std::string{m_logFolderPath.string()}
+    throw LogFolderIsNotDirectoryError{std::string{__FUNCTION__}
+                                       .append(": ")
+                                       .append(m_logFolderPath.string())
                                        .append(" isn't a directory!")};
 }
 

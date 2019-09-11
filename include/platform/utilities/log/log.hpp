@@ -76,12 +76,16 @@ PLATFORM_PSINGLETON_B(Log)
    * \brief Добавить лог с меткой TLogTag
    * \param TLogTag - метка, определяющая тип лога, с которым необходимо работать
    * \details Для использования необходимо наличие специализации шаблона platform::TypeName
-   * для типа TLogTag. Для удобства можно использовать макрос PLATFORM_REGISTER_LOG,
-   * определяющий простую метку и реализацю шаблона (использовать в глобальной области),
-   * совместно с макросом PLATFORM_TURN_ON_LOG, который следует применить в начале программы
+   *          для типа TLogTag. Для удобства можно использовать макрос PLATFORM_REGISTER_LOG,
+   *          определяющий простую метку и реализацю шаблона (использовать в глобальной области),
+   *          совместно с макросом PLATFORM_TURN_ON_LOG, который следует применить в начале программы.
+   *          Ошибки работы системы логирования выводятся в стандартный поток вывода (т.к. подразумевается,
+   *          что невозможно делать записи в логи)
+   * \todo Переработать систему обработки ошибок внутри логов, чтобы иметь возможность железобетонно
+   *       работать с логом библиотеки
    */
   template<class TLogTag>
-  void addLog() {
+  void addLog() noexcept {
     callAndHandleErrorsVoid<std::function<void()>>([this]() {
       checkOrCreateLogFolder();
       std::lock_guard<decltype(m_logsLock)> lg_(m_logsLock);
@@ -97,9 +101,10 @@ PLATFORM_PSINGLETON_B(Log)
 
   /**
    * \brief Извлечь лог с меткой TLogTag
+   * \param TLogTag - метка типа лога
    */
   template<class TLogTag>
-  void eraseLog() {
+  void eraseLog() noexcept {
     callAndHandleErrorsVoid<std::function<void()>>([this]() {
       std::lock_guard<decltype(m_logsLock)> lg_(m_logsLock);
       m_logs.erase<TLogTag>();
@@ -108,6 +113,7 @@ PLATFORM_PSINGLETON_B(Log)
 
   /**
    * \brief Добавить сообщение в лог с меткой FATAL
+   * \param TLogTag - метка типа лога
    */
   template<class TLogTag>
   inline bool addFatal(const std::string& message) noexcept {
@@ -115,6 +121,7 @@ PLATFORM_PSINGLETON_B(Log)
   }
   /**
    * \brief Добавить сообщение в лог с меткой ERROR
+   * \param TLogTag - метка типа лога
    */
   template<class TLogTag>
   inline bool addError(const std::string& message) noexcept {
@@ -122,6 +129,7 @@ PLATFORM_PSINGLETON_B(Log)
   }
   /**
    * \brief Добавить сообщение в лог с меткой WARNING
+   * \param TLogTag - метка типа лога
    */
   template<class TLogTag>
   inline bool addWarning(const std::string& message) noexcept {
@@ -129,6 +137,7 @@ PLATFORM_PSINGLETON_B(Log)
   }
   /**
    * \brief Добавить сообщение в лог с меткой INFORMATION
+   * \param TLogTag - метка типа лога
    */
   template<class TLogTag>
   inline bool addInformation(const std::string& message) noexcept {
@@ -136,7 +145,8 @@ PLATFORM_PSINGLETON_B(Log)
   }
   /**
    * \brief Добавить сообщение в лог с меткой DEBUG, если существует определение
-   * PLATFORM_DEBUG_LOG
+   *        PLATFORM_DEBUG_LOG
+   * \param TLogTag - метка типа лога
    */
   template<class TLogTag>
   inline bool addDebug(const std::string& message) noexcept {
@@ -152,6 +162,10 @@ PLATFORM_PSINGLETON_B(Log)
 
   Log();
 
+  /**
+   * \brief Добавить сообщение в лог
+   * \details Добавляет к переданному сообщению метку уровня лога и текущее время
+   */
   template<class TLogTag>
   bool add(const std::string& message, const level log_level) noexcept {
     return callAndHandleErrors<bool, std::function<bool()>>([this, &message, log_level]() -> bool {
@@ -165,7 +179,8 @@ PLATFORM_PSINGLETON_B(Log)
       }
 
       if (!current_log) {
-        add<PlatformLog>(message, log_level);
+        // Если искомый лог не найден, добавим warning в лог платформы
+        addWarning<PlatformLog>(message);
         return false;
       } else {
         current_log->add(generateLogMessage(message, log_level));
@@ -174,10 +189,21 @@ PLATFORM_PSINGLETON_B(Log)
     });
   }
 
+  /**
+   * \brief Сгенерировать полное сообщение для записи в лог (добавление метки уровня логировнаия и
+   *        и текущего времени)
+   */
   std::string generateLogMessage(const std::string& message, const level log_level);
+  /**
+   * \brief Проверить наличие директории для записи логов и, при необходимости, попытаться создать её
+   * \details Директория с именем log располагается рядом с исполняемым файлом
+   */
   void checkOrCreateLogFolder();
+  /**
+   * \brief Вызвать переданную функцию и вернуть её результат с учетом обработки ошибок
+   */
   template<class TResult, class TFunction>
-  TResult callAndHandleErrors(const TFunction& function) const {
+  TResult callAndHandleErrors(const TFunction& function) const noexcept {
     try {
       return function();
     } catch (const std::exception& ex) {
@@ -187,8 +213,11 @@ PLATFORM_PSINGLETON_B(Log)
     }
     return TResult{};
   }
+  /**
+   * \brief Вызвать переданную функцию и обработать возможные ошибки
+   */
   template<class TFunction>
-  void callAndHandleErrorsVoid(const TFunction& function) const {
+  void callAndHandleErrorsVoid(const TFunction& function) const noexcept {
     try {
       function();
     } catch (const std::exception& ex) {

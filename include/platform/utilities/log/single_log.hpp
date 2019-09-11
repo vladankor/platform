@@ -29,9 +29,9 @@ class SingleLog {
   void add(const std::string& message);
 
  private:
-  boost::filesystem::path m_logFilePath;
-            std::ofstream m_logFile;
-               std::mutex m_writeLock;
+  boost::filesystem::path m_logFilePath; /**< Полный путь к файлу лога */
+            std::ofstream m_logFile; /**< Поток файла лога */
+               std::mutex m_writeLock; /**< Блокировка для обеспечения последовательной записи */
                      bool m_owner = true;
 };  // class SingleLog
 
